@@ -3,71 +3,106 @@ using System.IO;
 using System.Text;
 using System.Windows;
 
-
-
 namespace UI {
-    public class IniFileRead {
-        private readonly Dictionary<string, string> _settings = new Dictionary<string, string>();
-        private readonly string _path;
 
-        public IniFileRead(string path) {
-            _path = path;
-            if(!File.Exists(path)) {
-                throw new FileNotFoundException("setting.ini 파일이 없습니다.", path);
+   public interface IIniFileReader {
+      string GetSetting(string key, string defaultValue = "");
+      void IniFileWriteSampleCode(Dictionary<string, string> newSettings);
+      }
+
+   public class IniFileRead :IIniFileReader {
+      private readonly Dictionary<string, string> _settings = new Dictionary<string, string>();
+      private readonly string _path;
+
+      public IniFileRead(string path) {
+         _path = path;
+         if(!File.Exists(path)) {
+            throw new FileNotFoundException("setting.ini 파일이 없습니다.", path);
             }
-            foreach(var line in File.ReadAllLines(path)) {
-                var trimmedLine = line.Trim();
-                if(string.IsNullOrEmpty(trimmedLine) || trimmedLine.StartsWith(";") || trimmedLine.StartsWith("["))
-                    continue;
+         foreach(var line in File.ReadAllLines(path)) {
+            var trimmedLine = line.Trim();
+            if(string.IsNullOrEmpty(trimmedLine) || trimmedLine.StartsWith(";") || trimmedLine.StartsWith("["))
+               continue;
 
-                var keyValue = trimmedLine.Split('=');
-                if(keyValue.Length == 2) {
-                    _settings[keyValue[0].Trim()] = keyValue[1].Trim();
-                }
+            var keyValue = trimmedLine.Split('=');
+            if(keyValue.Length == 2) {
+               _settings[keyValue[0].Trim()] = keyValue[1].Trim();
+               }
             }
-        }
+         }
 
-        public string GetSetting(string key, string defaultValue = "") {
-            return _settings.TryGetValue(key, out var value) ? value : defaultValue;
-        }
+      public string GetSetting(string key, string defaultValue = "") {
+         return _settings.TryGetValue(key, out var value) ? value : defaultValue;
+         }
+
+   
+      }
 
 
+   /// <summary>
+   /* 작동 샘플 코드 예시, 실행 폴더내. setting.ini파일 있어야함.
+    * 
+    * 
+    * <seting.ini> 예시
+      ;크레인 설정 파일. 
+      ;
+      ;
+      
+      
+      ;통신 설정
+      [SerialPort]
+      PortName=COM6
+      BaudRate=19200
+      
+      [Crean]
+      ;크레인 무게(t)
+      CreanWeight = 5
+      CreanType = 함미크레인
+      
+      
+      main 설정 예시. 
 
+      IIniFileReaderFactory factory = new IniFileReaderFactory();
+      string iniFilePath = "setting.ini";
+      var iniReader = factory.CreateIniFileReader(iniFilePath);
 
-        /* ini파일 메인에서 읽기 샘플 코드  */
-        public string IniFileReadSampleCode() {
+      _creanConfig.SerialCreateData.portName = iniReader.GetSetting("PortName", "COM5");
+      _creanConfig.SerialCreateData.baudRate = int.Parse(iniReader.GetSetting("BaudRate", "19200"));
+      _creanConfig.GroupBData.creaneSafeLoad = int.Parse(iniReader.GetSetting("CreanWeight", "15"));
+      _creanConfig.GroupAData.creaneType = iniReader.GetSetting("CreanType", "함수크레인");
 
-            // IniFileRead 함수를 이용해 setting.ini 파일에서 설정을 읽습니다.
-            var ini = new IniFileRead("setting.ini");
+      serialData = new SerialData(_creanConfig.SerialCreateData.portName, _creanConfig.SerialCreateData.baudRate); 
 
-            // INI 파일에서 PortName과 BaudRate 값을 가져옵니다.
-            string portName = ini.GetSetting("PortName", "COM3");
-            int baudRate = int.Parse(ini.GetSetting("BaudRate", "9600"));
+   */
+   /// </summary>
 
-            //메시지 박스에 출력
-            MessageBox.Show($"PortName: {portName}, BaudRate: {baudRate}", "Serial Port Configuration", MessageBoxButton.OK, MessageBoxImage.Information);
+   public interface IIniFileReaderFactory {
+      IIniFileReader CreateIniFileReader(string path);
+      }
 
-            //portName부분만 출력 
-            return portName;
+   public class IniFileReaderFactory :IIniFileReaderFactory {
+      public IIniFileReader CreateIniFileReader(string path) {
+         return new IniFileRead(path);  
+         }
+      }
 
-        }
+   public class Client {
+      private readonly IIniFileReader _iniFileReader;
 
-        /* ini파일 메인에서 쓰기 샘플 코드  */
-        public void IniFileWriteSampleCode() {
-            // 변경할 설정값을 Dictionary에 추가합니다.
-            var newSettings = new Dictionary<string, string> {
-                { "PortName", "COM4" },
-                { "BaudRate", "115200" }
-            };
+      public Client(IIniFileReaderFactory factory, string path) {
+         _iniFileReader = factory.CreateIniFileReader(path);
+         }
 
-            // 파일에 설정을 씁니다.
-            using(var writer = new StreamWriter(_path, false, Encoding.UTF8)) {
-                foreach(var kvp in newSettings) {
-                    writer.WriteLine($"{kvp.Key}={kvp.Value}");
-                }
-            }
+      public void ShowIniFileSettings() {
+         string portName = _iniFileReader.GetSetting("PortName", "COM2");
+         int baudRate = int.Parse(_iniFileReader.GetSetting("BaudRate", "19200"));
 
-            MessageBox.Show("INI 파일이 성공적으로 업데이트되었습니다.", "Serial Port Configuration", MessageBoxButton.OK, MessageBoxImage.Information);
-        }
-    }
-}
+         MessageBox.Show($"PortName: {portName}, BaudRate: {baudRate}", "Serial Port Configuration", MessageBoxButton.OK, MessageBoxImage.Information);
+         }
+
+      public void UpdateIniFile(Dictionary<string, string> newSettings) {
+         _iniFileReader.IniFileWriteSampleCode(newSettings);
+         }
+      }
+   }
+
