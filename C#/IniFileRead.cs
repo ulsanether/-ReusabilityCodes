@@ -3,43 +3,7 @@ using System.IO;
 using System.Text;
 using System.Windows;
 
-namespace UI {
-
-   public interface IIniFileReader {
-      string GetSetting(string key, string defaultValue = "");
-      void IniFileWriteSampleCode(Dictionary<string, string> newSettings);
-      }
-
-   public class IniFileRead :IIniFileReader {
-      private readonly Dictionary<string, string> _settings = new Dictionary<string, string>();
-      private readonly string _path;
-
-      public IniFileRead(string path) {
-         _path = path;
-         if(!File.Exists(path)) {
-            throw new FileNotFoundException("setting.ini 파일이 없습니다.", path);
-            }
-         foreach(var line in File.ReadAllLines(path)) {
-            var trimmedLine = line.Trim();
-            if(string.IsNullOrEmpty(trimmedLine) || trimmedLine.StartsWith(";") || trimmedLine.StartsWith("["))
-               continue;
-
-            var keyValue = trimmedLine.Split('=');
-            if(keyValue.Length == 2) {
-               _settings[keyValue[0].Trim()] = keyValue[1].Trim();
-               }
-            }
-         }
-
-      public string GetSetting(string key, string defaultValue = "") {
-         return _settings.TryGetValue(key, out var value) ? value : defaultValue;
-         }
-
-   
-      }
-
-
-   /// <summary>
+  /// <summary>
    /* 작동 샘플 코드 예시, 실행 폴더내. setting.ini파일 있어야함.
     * 
     * 
@@ -75,6 +39,45 @@ namespace UI {
 
    */
    /// </summary>
+
+
+namespace UI {
+
+   public interface IIniFileReader {
+      string GetSetting(string key, string defaultValue = "");
+    
+      }
+
+   public class IniFileRead :IIniFileReader {
+      private readonly Dictionary<string, string> _settings = new Dictionary<string, string>();
+      private readonly string _path;
+
+      public IniFileRead(string path) {
+         _path = path;
+         if(!File.Exists(path)) {
+            throw new FileNotFoundException("setting.ini 파일이 없습니다.", path);
+            }
+         foreach(var line in File.ReadAllLines(path)) {
+            var trimmedLine = line.Trim();
+            if(string.IsNullOrEmpty(trimmedLine) || trimmedLine.StartsWith(";") || trimmedLine.StartsWith("["))
+               continue;
+
+            var keyValue = trimmedLine.Split('=');
+            if(keyValue.Length == 2) {
+               _settings[keyValue[0].Trim()] = keyValue[1].Trim();
+               }
+            }
+         }
+
+      public string GetSetting(string key, string defaultValue = "") {
+         return _settings.TryGetValue(key, out var value) ? value : defaultValue;
+         }
+
+   
+      }
+
+
+ 
 
    public interface IIniFileReaderFactory {
       IIniFileReader CreateIniFileReader(string path);
